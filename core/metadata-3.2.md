@@ -45,13 +45,21 @@ this purpose.
 This document defines the following new protocol features:
 
 * Capability: `metadata`
+* ISUPPORT key: `METADATA`
 * Server notification: `METADATA`
 * Client command: `METADATA`
 * Server reply and error numerics
 
 ### Capability
 
-The `metadata` capability and value indicates that a server supports metadata, and communicates any configuration value keys that may affect the level of support.
+If `METADATA` is supported, it MUST be specified in `RPL_ISUPPORT` using the
+`METADATA` key. Servers MAY specify a limit on the number of explicitly-set
+keys per-user; the format in that case MUST be `METADATA=<integer>`, where
+`<integer>` is the limit.
+
+Servers supporting `METADATA` MAY additionaly advertise a `metadata` capability,
+which indicates that `METADATA` notifications are additionaly extending
+the functionality of the `MONITOR` command.
 
 The ABNF format of the `metadata` capability and value is:
 
@@ -66,17 +74,9 @@ The value keys are defined as follows:
 * `maxsub`: the maximum number of keys a client is allowed in its subscripion list. See the [Metadata subscriptions](#todo) section for more details.
 * `maxkey`: the maximum number of keys a client is allowed to set on its own nickname.
 
-
-TODO is this still required? include it for back compat?
-If `METADATA` is supported, it MUST be specified in `RPL_ISUPPORT` using the
-`METADATA` key. Servers MAY specify a limit on the number of explicitly-set
-keys per-user; the format in that case MUST be `METADATA=<integer>`, where
-`<integer>` is the limit.
-
-
 ### Server notification
 
-Clients that request the `metadata` capability MUST be able to handle the `METADATA` server notification. After negotiating this capability, servers MAY send these notifications to clients at any time.
+Clients that issued the `METADATA SUB` subcommand MUST be able to handle the `METADATA` server notification. After receiving this command, servers MAY send these notifications to clients at any time.
 
 The format of the `METADATA` server notication is:
 
@@ -113,23 +113,24 @@ The format of the `METADATA` client command is:
 
 The following numerics 760 through 775 are reserved for metadata, with these labels and parameters:
 
-| No. | Label                     | Parameters                               |
-| --- | ------------------------- | ---------------------------------------- |
-| 760 | `RPL_WHOISKEYVALUE`       | `<Target> <Key> <Visibility> :<Value>`   |
-| 761 | `RPL_KEYVALUE`            | `<Target> <Key> <Visibility>[ :<Value>]` |
-| 762 | `RPL_METADATAEND`         | `:end of metadata`                       |
-| 764 | `ERR_METADATALIMIT`       | `<Target> :metadata limit reached`       |
-| 765 | `ERR_TARGETINVALID`       | `<Target> :invalid metadata target`      |
-| 766 | `ERR_NOMATCHINGKEY`       | `<Target> <Key> :no matching key`        |
-| 767 | `ERR_KEYINVALID`          | `:<InvalidKey>`                          |
-| 768 | `ERR_KEYNOTSET`           | `<Target> <Key> :key not set`            |
-| 769 | `ERR_KEYNOPERMISSION`     | `<Target> <Key> :permission denied`      |
-| 770 | `RPL_METADATASUBOK`       | `:<Key1> [<Key2> ...]`                   |
-| 771 | `RPL_METADATAUNSUBOK`     | `:<Key1> [<Key2> ...]`                   |
-| 772 | `RPL_METADATASUBS`        | `:<Key1> [<Key2> ...]`                   |
-| 773 | `ERR_METADATATOOMANYSUBS` | `<Key>`                                  |
-| 774 | `ERR_METADATASYNCLATER`   | `<Target> [<RetryAfter>]`                |
-| 775 | `ERR_METADATARATELIMIT`   | `<Target> <Key> <RetryAfter> :<Value>`   |
+| No. | Label                           | Parameters                                  |
+| --- | ------------------------------- | ------------------------------------------- |
+| 760 | `RPL_WHOISKEYVALUE`             | `<Target> <Key> <Visibility> :<Value>`      |
+| 761 | `RPL_KEYVALUE`                  | `<Target> <Key> <Visibility>[ :<Value>]`    |
+| 762 | `RPL_METADATAEND`               | `:end of metadata`                          |
+| 764 | `ERR_METADATALIMIT`             | `<Target> :metadata limit reached`          |
+| 765 | `ERR_TARGETINVALID`             | `<Target> :invalid metadata target`         |
+| 766 | `ERR_NOMATCHINGKEY`             | `<Target> <Key> :no matching key`           |
+| 767 | `ERR_KEYINVALID`                | `:<InvalidKey>`                             |
+| 768 | `ERR_KEYNOTSET`                 | `<Target> <Key> :key not set`               |
+| 769 | `ERR_KEYNOPERMISSION`           | `<Target> <Key> :permission denied`         |
+| 770 | `RPL_METADATASUBOK`             | `:<Key1> [<Key2> ...]`                      |
+| 771 | `RPL_METADATAUNSUBOK`           | `:<Key1> [<Key2> ...]`                      |
+| 772 | `RPL_METADATASUBS`              | `:<Key1> [<Key2> ...]`                      |
+| 773 | `ERR_METADATATOOMANYSUBS`       | `<Key>`                                     |
+| 774 | `ERR_METADATASYNCLATER`         | `<Target> [<RetryAfter>]`                   |
+| 775 | `ERR_METADATARATELIMIT`         | `<Target> <Key> <RetryAfter> :<Value>`      |
+| 776 | `ERR_METADATAINVALIDSUBCOMMAND` | `<Subcommand> :invalid metadata subcommand` |
 
 Reference table of numerics and the subcommands of `METADATA` or any other commands that produce them:
 
@@ -148,7 +149,7 @@ Reference table of numerics and the subcommands of `METADATA` or any other comma
 | `RPL_METADATAUNSUBOK`     |     |      |     |       |     | *     |      |      |         |
 | `RPL_METADATASUBS`        |     |      |     |       |     |       | *    |      |         |
 | `ERR_METADATATOOMANYSUBS` |     |      |     |       | *   |       |      |      |         |
-| `ERR_METADATASYNCLATER`   |     |      |     |       |     |       |      | *    | `JOIN`  |
+| `ERR_METADATASYNCLATER`   |     |      |     |       | *   |       |      | *    | `JOIN`  |
 | `ERR_METADATARATELIMIT`   |     |      | *   |       |     |       |      |      |         |
 
 Each subcommand documentation describes the reply and error numerics it expects from the server, but here are brief descriptions of numerics that are used for multiple commands:
@@ -163,6 +164,7 @@ Errors:
 * `ERR_TARGETINVALID` when a client refers to an invalid target.
 * `ERR_KEYINVALID` when a client refers to an invalid key.
 * `ERR_KEYNOPERMISSION` when a client attempts to access or set a key on a target without sufficient permission.
+* `ERR_METADATAINVALIDSUBCOMMAND` when a client used a `METADATA` subcommand which is not defined.
 
 ### Keys and values
 
@@ -362,7 +364,22 @@ performed at this time.
 For details, please see the Postponed synchronization subsection of the
 Metadata notifications section.
 
-## Notification Mechanics (TODO merge with Metadata Notifications)
+## Compatibility with `metadata-notify`
+
+It is pointless to use the new metadata notify cap described in this document
+and `metadata-notify` (as described in the [metadata v3.2 specification](http://ircv3.net/specs/core/metadata-3.2.html))
+together.
+
+This is because `metadata-notify` implicitly subscribes the client to all keys,
+while metadata notify v2 requires the client to tell the keys it wants to
+subscribe to.
+
+Servers and clients MAY support both of the mentioned extensions, but MUST NOT
+negotiate both of them at the same time in the same connection.
+
+If both are available, the new metadata cap SHOULD be used.
+
+## Metadata Notifications
 
 A client can either be subscribed to a key, or not subscribed to it.
 
@@ -382,34 +399,18 @@ By default, the client is not subscribed to any keys.
 
 Managing subscriptions are possible with the protocol described below.
 
-Clients MUST handle the case where a metadata notification is sent even if they
-haven't subscribed to any key.
+Additional metadata notifications are enabled by requesting the OPTIONAL
+`metadata` capability during capability negotiation. When negotiated,
+this capability extends `MONITOR` behaviour to include subscribing users
+to notifications for those users they are currently monitoring.
 
-## Compatibility with `metadata-notify`
+Clients are also subscribed to notifications for channels they join.
+That means both channel metadata, and other users on the channel.
 
-It is pointless to use the new metadata notify cap described in this document
-and `metadata-notify` (as described in the [metadata v3.2 specification](http://ircv3.net/specs/core/metadata-3.2.html))
-together.
-
-This is because `metadata-notify` implicitly subscribes the client to all keys,
-while metadata notify v2 requires the client to tell the keys it wants to
-subscribe to.
-
-Servers and clients MAY support both of the mentioned extensions, but MUST NOT
-negotiate both of them at the same time in the same connection.
-
-If both are available, the new metadata notify cap SHOULD be used.
-
-## Metadata Notifications
-
-Metadata notifications are enabled by requesting the OPTIONAL `metadata-notify`
-capability during capability negotiation. When negotiated, this capability
-extends `MONITOR` behaviour to include subscribing users to notifications for
-those users they are currently monitoring. Clients are also subscribed to
-notifications for channels they join. Clients may discontinue notifications
-for users by issuing a disabling `MONITOR` command, and for channels by
-parting the channel. Clients are automatically subscribed to notifications for
-their own metadata, excluding changes made by the clients themselves.
+Clients may discontinue notifications for users by issuing a disabling
+`MONITOR` command, and for channels by parting the channel. Clients
+are automatically subscribed to notifications for their own metadata,
+excluding changes made by the clients themselves.
 
 Client subscriptions to a channel includes notifications for other users in
 the channel, regardless of `MONITOR` state.
@@ -428,14 +429,20 @@ requested them or not.
 
 Metadata propagates to clients automatically under certain conditions:
 
-1. Upon authentication and successful negotiation of `metadata-notify`, clients
-   MUST have their non-transient metadata propagated to them. If none exists,
-   servers MUST send `RPL_METADATAEND`.
-2. Clients SHOULD have current metadata of targets propagated to them upon
+1. Clients SHOULD have current metadata of targets propagated to them upon
    subscription.
-3. Clients who enable `metadata-notify` after issuing `MONITOR` commands to
-   subscribe to users SHOULD have current metadata propagated to them for those
-   users.
+1. Clients SHOULD be notified about channel metadata after joining a channel
+   which has set any of the subscribed keys.
+1. Clients SHOULD be notified about other channel members' metadata
+   after joining a channel.
+1. Clients SHOULD have new metadata of a client propagated to them when
+   a value of a subscribed key for another client sharing at least one channel
+   is set, unset or changed.
+1. Clients SHOULD have new metadata of a channel propagated to them when
+   a value of a subscribed key for a channel the client is on is set, unset
+   or changed.
+1. Clients who enable `metadata` after issuing `MONITOR` commands to subscribe
+   to users SHOULD have current metadata propagated to them for those users.
 
 ### Postponed synchronization
 
@@ -444,8 +451,12 @@ to a client due to the client subscribing to many targets at once.
 For example, this can happen if the client joins a large channel or when the
 client is already on some channels and turns on the `metadata`
 capability. In this case the server MAY choose to not propagate the metadata
-of the newly subscribed targets to the client when the join or when the
-`CAP REQ` happens, but send a `ERR_METADATASYNCLATER` numeric instead.
+of the newly subscribed targets to the client when the join, the
+`CAP REQ` or the `METADATA SUB` subcommand happens, but send a
+`ERR_METADATASYNCLATER` numeric instead.
+
+A server MAY not use the `ERR_METADATASYNCLATER` reply, delaying subsequent
+notifications instead.
 
 #### Handling `ERR_METADATASYNCLATER`
 
@@ -467,107 +478,6 @@ subset SHALL be set explicitly, rather than informatively or as a side-effect
 of other events. For a complete view of user metadata, see `METADATA LIST`.
 
 ## Examples
-
-Setting metadata for self:
-
-    METADATA * SET url :http://www.example.com
-    :irc.example.com RPL_KEYVALUE * url * :http://www.example.com
-    :irc.example.com RPL_METADATAEND :end of metadata
-
-Setting metadata for channel:
-
-    METADATA #example SET url :http://www.example.com
-    :irc.example.com RPL_KEYVALUE #example url * :http://www.example.com
-    :irc.example.com RPL_METADATAEND :end of metadata
-
-Setting metadata for another user, no permission:
-
-    METADATA user1 SET url :http://www.example.com
-    :irc.example.com ERR_KEYNOPERMISSION user1 url :permission denied
-
-Setting metadata for self, limit reached:
-
-    METADATA * SET url :http://www.example.com
-    :irc.example.com ERR_METADATALIMIT * :metadata limit reached
-
-Setting metadata for an invalid target:
-
-    METADATA $a:user SET url :http://www.example.com
-    :irc.example.com ERR_TARGETINVALID $a:user :invalid metadata target
-
-Setting metadata with an invalid key:
-
-    METADATA user1 SET $url$ :http://www.example.com
-    :irc.example.com ERR_KEYINVALID $url$
-
-Listing metadata, with an implementation-defined visibility field:
-
-    METADATA user1 LIST
-    :irc.example.com RPL_KEYVALUE user1 url * :http://www.example.com
-    :irc.example.com RPL_KEYVALUE user1 im.xmpp * :user1@xmpp.example.com
-    :irc.example.com RPL_KEYVALUE user1 bot-likeliness-score visible-only-for-admin :42
-    :irc.example.com RPL_METADATAEND :end of metadata
-
-Getting several keys of metadata of the same user:
-
-    METADATA user1 GET blargh splot im.xmpp
-    :irc.example.com ERR_NOMATCHINGKEY user1 blargh :no matching key
-    :irc.example.com ERR_NOMATCHINGKEY user1 splot :no matching key
-    :irc.example.com RPL_KEYVALUE user1 im.xmpp * :user1@xmpp.example.com
-
-User sets metadata on a channel:
-
-    :user1!~user@somewhere.example.com METADATA #example url * :http://www.example.com
-
-External server updates metadata on a channel:
-
-    :irc.example.com METADATA #example url * :http://wiki.example.com
-
-External server sets metadata on a user:
-
-    :irc.example.com METADATA user1 account * :user1
-
-Server rate limits setting metadata with a RetryAfter value
-
-    METADATA * SET url :http://www.example.com
-    :irc.example.com ERR_METADATARATELIMIT * url 5 :http://www.example.com
-
-Server rate limits setting metadata with no RetryAfter value
-
-    METADATA * SET url :http://www.example.com
-    :irc.example.com ERR_METADATARATELIMIT * url * :http://www.example.com
-
-Client joins a channel, gets `ERR_METADATASYNCLATER` and requests a sync later
-
-    C: JOIN #bigchan
-    S: modernclient!modernclient@example.com JOIN #bigchan
-    S: :irc.example.com 353 modernclient @ #bigchan :user1 user2 user3 user4 user5 ...
-    S: :irc.example.com 353 modernclient @ #bigchan :user51 user52 user53 user54 ...
-    S: :irc.example.com 353 modernclient @ #bigchan :user101 user102 user103 user104 ...
-    S: :irc.example.com 353 modernclient @ #bigchan :user151 user152 user153 user154 ...
-    S: :irc.example.com 366 modernclient #bigchan :End of /NAMES list.
-    S: :irc.example.com ERR_METADATASYNCLATER modernclient #bigchan 4
-    
-    client waits 4 seconds
-    
-    C: METADATA #bigchan SYNC
-    S: :irc.example.com ERR_METADATASYNCLATER modernclient #bigchan 6
-    
-    client waits 6 seconds
-    
-    C: METADATA #bigchan SYNC
-    S: :irc.example.com METADATA user52 foo * :example value 1
-    S: :irc.example.com METADATA user2 bar * :second example value 
-    S: :irc.example.com METADATA user1 foo * :third example value
-    S: :irc.example.com METADATA user1 bar * :this is another example value
-    S: :irc.example.com METADATA user152 baz * :Lorem ipsum
-    S: :irc.example.com METADATA user3 website * :www.example.com
-    S: :irc.example.com METADATA user152 bar * :dolor sit amet
-
-    ...and many more metadata messages   
-
-
-## More Examples (TODO merge with previous)
 
 These examples show the labels of the numerics (e.g. `RPL_METADATASUBOK`)
 instead of their number (e.g. `775`) in order to aid understanding.
@@ -803,6 +713,108 @@ Twice:
     S: :irc.example.com RPL_METADATASUBS modernclient :secretkey1 secretkey2 website
     S: :irc.example.com RPL_METADATAEND modernclient :end of metadata
 
+### Setting metadata for self:
+
+    METADATA * SET url :http://www.example.com
+    :irc.example.com RPL_KEYVALUE * url * :http://www.example.com
+    :irc.example.com RPL_METADATAEND :end of metadata
+
+### Setting metadata for channel:
+
+    METADATA #example SET url :http://www.example.com
+    :irc.example.com RPL_KEYVALUE #example url * :http://www.example.com
+    :irc.example.com RPL_METADATAEND :end of metadata
+
+### Setting metadata for another user, no permission:
+
+    METADATA user1 SET url :http://www.example.com
+    :irc.example.com ERR_KEYNOPERMISSION user1 url :permission denied
+
+### Setting metadata for self, limit reached:
+
+    METADATA * SET url :http://www.example.com
+    :irc.example.com ERR_METADATALIMIT * :metadata limit reached
+
+### Setting metadata for an invalid target:
+
+    METADATA $a:user SET url :http://www.example.com
+    :irc.example.com ERR_TARGETINVALID $a:user :invalid metadata target
+
+### Setting metadata with an invalid key:
+
+    METADATA user1 SET $url$ :http://www.example.com
+    :irc.example.com ERR_KEYINVALID $url$
+
+### Listing metadata, with an implementation-defined visibility field:
+
+    METADATA user1 LIST
+    :irc.example.com RPL_KEYVALUE user1 url * :http://www.example.com
+    :irc.example.com RPL_KEYVALUE user1 im.xmpp * :user1@xmpp.example.com
+    :irc.example.com RPL_KEYVALUE user1 bot-likeliness-score visible-only-for-admin :42
+    :irc.example.com RPL_METADATAEND :end of metadata
+
+### Getting several keys of metadata of the same user:
+
+    METADATA user1 GET blargh splot im.xmpp
+    :irc.example.com ERR_NOMATCHINGKEY user1 blargh :no matching key
+    :irc.example.com ERR_NOMATCHINGKEY user1 splot :no matching key
+    :irc.example.com RPL_KEYVALUE user1 im.xmpp * :user1@xmpp.example.com
+
+### User sets metadata on a channel:
+
+    :user1!~user@somewhere.example.com METADATA #example url * :http://www.example.com
+
+### External server updates metadata on a channel:
+
+    :irc.example.com METADATA #example url * :http://wiki.example.com
+
+### External server sets metadata on a user:
+
+    :irc.example.com METADATA user1 account * :user1
+
+### Server rate limits setting metadata with a RetryAfter value
+
+    METADATA * SET url :http://www.example.com
+    :irc.example.com ERR_METADATARATELIMIT * url 5 :http://www.example.com
+
+### Server rate limits setting metadata with no RetryAfter value
+
+    METADATA * SET url :http://www.example.com
+    :irc.example.com ERR_METADATARATELIMIT * url * :http://www.example.com
+
+### Client joins a channel, gets `ERR_METADATASYNCLATER` and requests a sync later
+
+    C: JOIN #bigchan
+    S: modernclient!modernclient@example.com JOIN #bigchan
+    S: :irc.example.com 353 modernclient @ #bigchan :user1 user2 user3 user4 user5 ...
+    S: :irc.example.com 353 modernclient @ #bigchan :user51 user52 user53 user54 ...
+    S: :irc.example.com 353 modernclient @ #bigchan :user101 user102 user103 user104 ...
+    S: :irc.example.com 353 modernclient @ #bigchan :user151 user152 user153 user154 ...
+    S: :irc.example.com 366 modernclient #bigchan :End of /NAMES list.
+    S: :irc.example.com ERR_METADATASYNCLATER modernclient #bigchan 4
+    
+    client waits 4 seconds
+    
+    C: METADATA #bigchan SYNC
+    S: :irc.example.com ERR_METADATASYNCLATER modernclient #bigchan 6
+    
+    client waits 6 seconds
+    
+    C: METADATA #bigchan SYNC
+    S: :irc.example.com METADATA user52 foo * :example value 1
+    S: :irc.example.com METADATA user2 bar * :second example value 
+    S: :irc.example.com METADATA user1 foo * :third example value
+    S: :irc.example.com METADATA user1 bar * :this is another example value
+    S: :irc.example.com METADATA user152 baz * :Lorem ipsum
+    S: :irc.example.com METADATA user3 website * :www.example.com
+    S: :irc.example.com METADATA user152 bar * :dolor sit amet
+
+    ...and many more metadata messages
+
+### Client sending an invalid subcommand
+    C: METADATA * FOO :bar
+    S: :irc.example.com ERR_METADATAINVALIDSUBCOMMAND FOO :invalid metadata subcommand
+
 ### Capability value in `CAP LS` 1 
 
     C: CAP LS 302
@@ -814,13 +826,13 @@ Twice:
     S: CAP * LS :draft/metadata=maxsub=25 multi-prefix invite-notify
 
 
-### Non-normative
+## Non-normative
 
 The following examples describe how an implementation might use certain
 features. Unlike previous examples, they are in no way intended to guide
 implementations' behaviour.
 
-Notification for a user becoming an operator:
+### Notification for a user becoming an operator:
 
     :OperServ!OperServ@services.int METADATA user1 services.operclass oper:auspex :services-root
 
